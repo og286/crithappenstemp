@@ -523,11 +523,12 @@ async function saveEvent() {
     description:   document.getElementById('fDescription').value.trim()
   };
 
+  const idToUpdate = editingId;
   closeModal();
   showToast('Saving…');
   try {
-    if (editingId) {
-      await updateEvent(editingId, eventData);
+    if (idToUpdate) {
+      await updateEvent(idToUpdate, eventData);
     } else {
       await insertEvent(eventData);
     }
