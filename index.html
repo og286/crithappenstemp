@@ -819,25 +819,36 @@ function toggleMenu() {
   document.getElementById('navLinks').classList.toggle('open');
 }
 
-// ── CONFIG ──
-const GIST_ID = 'fd11a3d66a4df03dc6e45bb4d0fba2cb';
-const GIST_API = `https://api.github.com/gists/${GIST_ID}`;
+// ── SUPABASE CONFIG ──
+const SB_URL  = 'https://zxrycurzcsiogxwtsuci.supabase.co';
+const SB_KEY  = 'sb_publishable_97NVhR4oYoOv-reBa1Oiqw_cWPzMl6B';
+const SB_HEADERS = { apikey: SB_KEY, Authorization: `Bearer ${SB_KEY}` };
 
-// ── EVENTS DATA (fetched from GitHub Gist API) ──
+// ── EVENTS DATA ──
 let _eventsCache = null;
 
 async function loadEvents() {
   if (_eventsCache) return _eventsCache;
   try {
-    const res = await fetch(GIST_API);
-    if (!res.ok) throw new Error(`GitHub API returned ${res.status}`);
-    const gist = await res.json();
-    const file = gist.files && gist.files['events.json'];
-    if (!file) throw new Error('events.json not found in Gist — check the filename is exactly "events.json"');
-    _eventsCache = JSON.parse(file.content);
+    const res = await fetch(`${SB_URL}/rest/v1/events?select=*&order=date.desc`, {
+      headers: SB_HEADERS
+    });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const rows = await res.json();
+    // Normalise snake_case from DB to camelCase used in the rest of the JS
+    _eventsCache = rows.map(r => ({
+      id:            r.id,
+      title:         r.title,
+      type:          r.type,
+      category:      r.category,
+      date:          r.date,
+      endDate:       r.end_date,
+      description:   r.description,
+      cost:          r.cost,
+      paymentAmount: r.payment_amount
+    }));
   } catch(e) {
-    console.error('Gist load error:', e.message);
-    // Show the actual error on screen to help debug
+    console.error('Events load error:', e.message);
     const els = ['homeEventsList', 'fullEventsList'];
     els.forEach(id => {
       const el = document.getElementById(id);

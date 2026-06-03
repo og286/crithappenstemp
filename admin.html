@@ -153,7 +153,10 @@
   <div class="login-box">
     <h1>Crit Happens</h1>
     <p>Admin Panel — Club Committee Only</p>
-    <input type="password" id="passwordInput" placeholder="Paste your GitHub token"
+    <input type="email" id="passwordInput" placeholder="Email address"
+           style="letter-spacing:normal;margin-bottom:0.75rem;"
+           onkeydown="if(event.key==='Enter')document.getElementById('passwordInput2').focus()" />
+    <input type="password" id="passwordInput2" placeholder="Password"
            onkeydown="if(event.key==='Enter')doLogin()" />
     <p class="login-error" id="loginError">Incorrect password. Try again.</p>
     <button class="btn-primary" onclick="doLogin()">Log In</button>
@@ -279,40 +282,53 @@
 <div id="toast"></div>
 
 <script>
-// ── CONFIG — set your Gist ID here after creating it ──
-const GIST_ID = 'fd11a3d66a4df03dc6e45bb4d0fba2cb';
-const GIST_FILENAME = 'events.json';
+// ── SUPABASE CONFIG ──
+const SB_URL = 'https://zxrycurzcsiogxwtsuci.supabase.co';
+const SB_KEY = 'sb_publishable_97NVhR4oYoOv-reBa1Oiqw_cWPzMl6B';
 
-// ── TOKEN STORAGE (stored in browser, never sent anywhere except GitHub API) ──
-function getToken() { return localStorage.getItem('ch_gh_token') || ''; }
-function saveToken(t) { localStorage.setItem('ch_gh_token', t); }
+// ── SESSION ──
+let _session = null;
+
+function authHeaders() {
+  return {
+    apikey: SB_KEY,
+    Authorization: `Bearer ${_session ? _session.access_token : SB_KEY}`,
+    'Content-Type': 'application/json',
+    Prefer: 'return=representation'
+  };
+}
 
 // ── AUTH ──
 async function doLogin() {
-  const token = document.getElementById('passwordInput').value.trim();
-  if (!token) return;
+  const email    = document.getElementById('passwordInput').value.trim();
+  const password = document.getElementById('passwordInput2').value.trim();
+  if (!email || !password) return;
   const err = document.getElementById('loginError');
   err.style.display = 'none';
-  // Verify token works by fetching the Gist
   try {
-    const res = await fetch(`https://api.github.com/gists/${GIST_ID}`, {
-      headers: { Authorization: `token ${token}`, Accept: 'application/vnd.github.v3+json' }
+    const res = await fetch(`${SB_URL}/auth/v1/token?grant_type=password`, {
+      method: 'POST',
+      headers: { apikey: SB_KEY, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password })
     });
-    if (!res.ok) throw new Error('Bad token or Gist ID');
-    saveToken(token);
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error_description || data.msg || 'Login failed');
+    _session = data;
+    sessionStorage.setItem('ch_session', JSON.stringify(data));
     showApp();
   } catch(e) {
-    err.textContent = 'Could not authenticate. Check your token and Gist ID.';
+    err.textContent = e.message;
     err.style.display = 'block';
-    document.getElementById('passwordInput').value = '';
   }
 }
 
 function doLogout() {
-  localStorage.removeItem('ch_gh_token');
+  _session = null;
+  sessionStorage.removeItem('ch_session');
   document.getElementById('loginScreen').style.display = 'flex';
   document.getElementById('adminApp').style.display = 'none';
   document.getElementById('passwordInput').value = '';
+  document.getElementById('passwordInput2').value = '';
 }
 
 function showApp() {
@@ -321,33 +337,63 @@ function showApp() {
   loadAndRender();
 }
 
-// Auto-login if token already stored
-if (getToken()) showApp();
+// Restore session on page load
+const _stored = sessionStorage.getItem('ch_session');
+if (_stored) { _session = JSON.parse(_stored); showApp(); }
 
-// ── GITHUB GIST API ──
-async function fetchEvents() {
-  const res = await fetch(`https://api.github.com/gists/${GIST_ID}`, {
-    headers: { Authorization: `token ${getToken()}`, Accept: 'application/vnd.github.v3+json' }
-  });
-  if (!res.ok) throw new Error('Failed to fetch Gist');
-  const gist = await res.json();
-  const content = gist.files[GIST_FILENAME]?.content || '[]';
-  return JSON.parse(content);
+// ── SUPABASE CRUD ──
+function toRow(e) {
+  return {
+    title:          e.title,
+    type:           e.type           || 'event',
+    category:       e.category       || 'general',
+    date:           e.date,
+    end_date:       e.endDate        || null,
+    description:    e.description    || null,
+    cost:           e.cost           || null,
+    payment_amount: e.paymentAmount  ? parseFloat(e.paymentAmount) : null
+  };
+}
+function fromRow(r) {
+  return {
+    id:            r.id,
+    title:         r.title,
+    type:          r.type,
+    category:      r.category,
+    date:          r.date,
+    endDate:       r.end_date,
+    description:   r.description,
+    cost:          r.cost,
+    paymentAmount: r.payment_amount
+  };
 }
 
-async function pushEvents(events) {
-  const res = await fetch(`https://api.github.com/gists/${GIST_ID}`, {
-    method: 'PATCH',
-    headers: {
-      Authorization: `token ${getToken()}`,
-      Accept: 'application/vnd.github.v3+json',
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify({
-      files: { [GIST_FILENAME]: { content: JSON.stringify(events, null, 2) } }
-    })
+async function fetchEvents() {
+  const res = await fetch(`${SB_URL}/rest/v1/events?select=*&order=date.asc`, { headers: authHeaders() });
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  return (await res.json()).map(fromRow);
+}
+
+async function insertEvent(e) {
+  const res = await fetch(`${SB_URL}/rest/v1/events`, {
+    method: 'POST', headers: authHeaders(), body: JSON.stringify(toRow(e))
   });
-  if (!res.ok) throw new Error('Failed to update Gist');
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  return fromRow((await res.json())[0]);
+}
+
+async function updateEvent(id, e) {
+  const res = await fetch(`${SB_URL}/rest/v1/events?id=eq.${id}`, {
+    method: 'PATCH', headers: authHeaders(), body: JSON.stringify(toRow(e))
+  });
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+}
+
+async function deleteEventFromDB(id) {
+  const res = await fetch(`${SB_URL}/rest/v1/events?id=eq.${id}`, {
+    method: 'DELETE', headers: authHeaders()
+  });
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
 }
 
 // ── RENDER ──
@@ -358,7 +404,6 @@ function escHtml(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&
 function formatDate(d) {
   return new Date(d+'T00:00:00').toLocaleDateString('en-GB',{weekday:'short',year:'numeric',month:'short',day:'numeric'});
 }
-function nextId(events) { return events.length ? Math.max(...events.map(e=>e.id||0)) + 1 : 1; }
 
 let _events = [];
 
@@ -368,7 +413,7 @@ async function loadAndRender() {
     _events = await fetchEvents();
     renderAll();
   } catch(e) {
-    showToast('⚠ Could not load events from Gist');
+    showToast('⚠ Could not load events: ' + e.message);
   }
   setLoading(false);
 }
@@ -379,10 +424,10 @@ function setLoading(on) {
 }
 
 function renderAll() {
-  const events = [..._events].sort((a,b) => a.date.localeCompare(b.date));
+  const events = [..._events].sort((a,b) => b.date.localeCompare(a.date));
   const now = new Date(new Date().setHours(0,0,0,0));
-  const upcoming = events.filter(e => new Date(e.date+'T00:00:00') >= now);
-  const past = events.filter(e => new Date(e.date+'T00:00:00') < now);
+  const upcoming = events.filter(e => new Date((e.endDate||e.date)+'T00:00:00') >= now);
+  const past     = events.filter(e => new Date((e.endDate||e.date)+'T00:00:00') < now);
   const thisMonth = upcoming.filter(e => {
     const d = new Date(e.date+'T00:00:00');
     return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
@@ -398,10 +443,13 @@ function renderAll() {
     return;
   }
   tbody.innerHTML = events.map(e => {
-    const isPast = new Date(e.date+'T00:00:00') < now;
+    const isPast = new Date((e.endDate||e.date)+'T00:00:00') < now;
+    const dateLabel = e.type === 'league' && e.endDate
+      ? `${formatDate(e.date)} → ${formatDate(e.endDate)}`
+      : formatDate(e.date);
     return `
       <tr class="${isPast?'past-row':''}">
-        <td style="white-space:nowrap;color:${isPast?'var(--muted)':'var(--text)'};">${formatDate(e.date)}</td>
+        <td style="white-space:nowrap;font-size:0.82rem;color:${isPast?'var(--muted)':'var(--text)'};">${dateLabel}</td>
         <td>
           <div style="font-weight:600;color:var(--white);">${escHtml(e.title)}</div>
           ${e.description ? `<div style="font-size:0.8rem;color:var(--muted);margin-top:0.2rem;">${escHtml(e.description.substring(0,80))}${e.description.length>80?'…':''}</div>` : ''}
@@ -466,49 +514,43 @@ function closeModalOutside(e) { if (e.target === document.getElementById('modalO
 
 async function saveEvent() {
   const title = document.getElementById('fTitle').value.trim();
-  const date = document.getElementById('fDate').value;
+  const date  = document.getElementById('fDate').value;
   if (!title || !date) { document.getElementById('modalError').style.display = 'block'; return; }
 
-  const type = document.getElementById('fType').value;
-  const endDate = document.getElementById('fEndDate').value;
-  const paymentAmount = document.getElementById('fPaymentAmount').value.trim();
   const eventData = {
-    id: editingId || nextId(_events),
-    title, date, type,
-    ...(type === 'league' && endDate ? { endDate } : {}),
-    category: document.getElementById('fCategory').value,
-    cost: document.getElementById('fCost').value.trim(),
-    ...(paymentAmount ? { paymentAmount } : {}),
-    description: document.getElementById('fDescription').value.trim()
+    title, date,
+    type:          document.getElementById('fType').value,
+    endDate:       document.getElementById('fEndDate').value || null,
+    category:      document.getElementById('fCategory').value,
+    cost:          document.getElementById('fCost').value.trim(),
+    paymentAmount: document.getElementById('fPaymentAmount').value.trim() || null,
+    description:   document.getElementById('fDescription').value.trim()
   };
-
-  const updated = editingId
-    ? _events.map(e => e.id === editingId ? eventData : e)
-    : [..._events, eventData];
 
   closeModal();
   showToast('Saving…');
   try {
-    await pushEvents(updated);
-    _events = updated;
-    renderAll();
+    if (editingId) {
+      await updateEvent(editingId, eventData);
+    } else {
+      await insertEvent(eventData);
+    }
+    await loadAndRender();
     showToast(editingId ? '✓ Event updated' : '✓ Event added');
   } catch(e) {
-    showToast('⚠ Save failed — check your token');
+    showToast('⚠ Save failed: ' + e.message);
   }
 }
 
 async function deleteEvent(id) {
   if (!confirm('Delete this event? This cannot be undone.')) return;
-  const updated = _events.filter(e => e.id !== id);
   showToast('Deleting…');
   try {
-    await pushEvents(updated);
-    _events = updated;
-    renderAll();
+    await deleteEventFromDB(id);
+    await loadAndRender();
     showToast('✓ Event deleted');
   } catch(e) {
-    showToast('⚠ Delete failed — check your token');
+    showToast('⚠ Delete failed: ' + e.message);
   }
 }
 
