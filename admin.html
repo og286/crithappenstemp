@@ -225,8 +225,12 @@
     </div>
     <div class="form-row">
       <div class="form-group">
-        <label>Date *</label>
-        <input type="date" id="fDate" />
+        <label>Type</label>
+        <select id="fType" onchange="toggleEndDate()">
+          <option value="event">Event</option>
+          <option value="tournament">Tournament</option>
+          <option value="league">League</option>
+        </select>
       </div>
       <div class="form-group">
         <label>Category</label>
@@ -239,9 +243,25 @@
         </select>
       </div>
     </div>
-    <div class="form-group">
-      <label>Cost / Entry</label>
-      <input type="text" id="fCost" placeholder="e.g. £10 entry, or Standard session fee" />
+    <div class="form-row">
+      <div class="form-group">
+        <label id="fDateLabel">Date *</label>
+        <input type="date" id="fDate" />
+      </div>
+      <div class="form-group" id="fEndDateGroup" style="display:none;">
+        <label>End Date (leagues)</label>
+        <input type="date" id="fEndDate" />
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Cost / Entry (display text)</label>
+        <input type="text" id="fCost" placeholder="e.g. £10 entry, or Free" />
+      </div>
+      <div class="form-group">
+        <label>Payment Amount £ <span style="font-weight:400;color:var(--muted);">(optional — enables PayPal button)</span></label>
+        <input type="number" id="fPaymentAmount" placeholder="e.g. 10.00" min="0" step="0.01" />
+      </div>
     </div>
     <div class="form-group">
       <label>Description</label>
@@ -332,6 +352,8 @@ async function pushEvents(events) {
 
 // ── RENDER ──
 const CAT = { wargames:'Wargames', rpg:'RPG & D&D', boardgames:'Board Games', social:'Social', general:'General' };
+const TYPE = { league:'League', tournament:'Tournament', event:'Event' };
+const TYPE_STYLE = { league:'background:#1d4ed8;color:#fff;', tournament:'background:#7c3aed;color:#fff;', event:'background:#065f46;color:#fff;' };
 function escHtml(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 function formatDate(d) {
   return new Date(d+'T00:00:00').toLocaleDateString('en-GB',{weekday:'short',year:'numeric',month:'short',day:'numeric'});
@@ -384,7 +406,10 @@ function renderAll() {
           <div style="font-weight:600;color:var(--white);">${escHtml(e.title)}</div>
           ${e.description ? `<div style="font-size:0.8rem;color:var(--muted);margin-top:0.2rem;">${escHtml(e.description.substring(0,80))}${e.description.length>80?'…':''}</div>` : ''}
         </td>
-        <td><span class="cat-badge">${CAT[e.category]||'General'}</span></td>
+        <td>
+          ${e.type ? `<span style="font-size:0.7rem;font-weight:800;padding:0.15rem 0.55rem;border-radius:20px;${TYPE_STYLE[e.type]||''}margin-right:4px;">${TYPE[e.type]||e.type}</span>` : ''}
+          <span class="cat-badge">${CAT[e.category]||'General'}</span>
+        </td>
         <td style="font-size:0.85rem;color:var(--muted);">${escHtml(e.cost||'—')}</td>
         <td>
           <div style="display:flex;gap:0.5rem;">
@@ -398,6 +423,13 @@ function renderAll() {
 
 // ── MODAL ──
 let editingId = null;
+
+function toggleEndDate() {
+  const isLeague = document.getElementById('fType').value === 'league';
+  document.getElementById('fEndDateGroup').style.display = isLeague ? 'block' : 'none';
+  document.getElementById('fDateLabel').textContent = isLeague ? 'Start Date *' : 'Date *';
+}
+
 function openModal(id) {
   editingId = id || null;
   document.getElementById('modalTitle').textContent = id ? 'Edit Event' : 'Add Event';
@@ -406,18 +438,25 @@ function openModal(id) {
     const e = _events.find(ev => ev.id === id);
     if (e) {
       document.getElementById('fTitle').value = e.title || '';
+      document.getElementById('fType').value = e.type || 'event';
       document.getElementById('fDate').value = e.date || '';
+      document.getElementById('fEndDate').value = e.endDate || '';
       document.getElementById('fCategory').value = e.category || 'general';
       document.getElementById('fCost').value = e.cost || '';
+      document.getElementById('fPaymentAmount').value = e.paymentAmount || '';
       document.getElementById('fDescription').value = e.description || '';
     }
   } else {
     document.getElementById('fTitle').value = '';
+    document.getElementById('fType').value = 'event';
     document.getElementById('fDate').value = '';
+    document.getElementById('fEndDate').value = '';
     document.getElementById('fCategory').value = 'general';
     document.getElementById('fCost').value = '';
+    document.getElementById('fPaymentAmount').value = '';
     document.getElementById('fDescription').value = '';
   }
+  toggleEndDate();
   document.getElementById('modalOverlay').classList.add('open');
   setTimeout(() => document.getElementById('fTitle').focus(), 50);
 }
@@ -430,11 +469,16 @@ async function saveEvent() {
   const date = document.getElementById('fDate').value;
   if (!title || !date) { document.getElementById('modalError').style.display = 'block'; return; }
 
+  const type = document.getElementById('fType').value;
+  const endDate = document.getElementById('fEndDate').value;
+  const paymentAmount = document.getElementById('fPaymentAmount').value.trim();
   const eventData = {
     id: editingId || nextId(_events),
-    title, date,
+    title, date, type,
+    ...(type === 'league' && endDate ? { endDate } : {}),
     category: document.getElementById('fCategory').value,
     cost: document.getElementById('fCost').value.trim(),
+    ...(paymentAmount ? { paymentAmount } : {}),
     description: document.getElementById('fDescription').value.trim()
   };
 
