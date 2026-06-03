@@ -821,19 +821,28 @@ function toggleMenu() {
 
 // ── CONFIG ──
 const GIST_ID = 'fd11a3d66a4df03dc6e45bb4d0fba2cb';
-const GIST_RAW = `https://gist.githubusercontent.com/og286/${GIST_ID}/raw/events.json`;
+const GIST_API = `https://api.github.com/gists/${GIST_ID}`;
 
-// ── EVENTS DATA (fetched from GitHub Gist) ──
+// ── EVENTS DATA (fetched from GitHub Gist API) ──
 let _eventsCache = null;
 
 async function loadEvents() {
   if (_eventsCache) return _eventsCache;
   try {
-    const res = await fetch(GIST_RAW + '?t=' + Date.now());
-    if (!res.ok) throw new Error('Failed to fetch');
-    _eventsCache = await res.json();
+    const res = await fetch(GIST_API);
+    if (!res.ok) throw new Error(`GitHub API returned ${res.status}`);
+    const gist = await res.json();
+    const file = gist.files && gist.files['events.json'];
+    if (!file) throw new Error('events.json not found in Gist — check the filename is exactly "events.json"');
+    _eventsCache = JSON.parse(file.content);
   } catch(e) {
-    console.warn('Could not load events from Gist:', e);
+    console.error('Gist load error:', e.message);
+    // Show the actual error on screen to help debug
+    const els = ['homeEventsList', 'fullEventsList'];
+    els.forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.innerHTML = `<div class="no-events"><p>⚠ Could not load events: ${e.message}</p></div>`;
+    });
     _eventsCache = [];
   }
   return _eventsCache;
