@@ -819,21 +819,25 @@ function toggleMenu() {
   document.getElementById('navLinks').classList.toggle('open');
 }
 
-// ── CONFIG — update GIST_ID after creating your Gist ──
+// ── CONFIG ──
 const GIST_ID = 'fd11a3d66a4df03dc6e45bb4d0fba2cb';
-const GIST_RAW = `https://gist.githubusercontent.com/raw/${GIST_ID}/events.json`;
+const GIST_API = `https://api.github.com/gists/${GIST_ID}`;
 
-// ── EVENTS DATA (fetched from GitHub Gist) ──
+// ── EVENTS DATA (fetched from GitHub Gist API) ──
 let _eventsCache = null;
 
 async function loadEvents() {
   if (_eventsCache) return _eventsCache;
   try {
-    const res = await fetch(GIST_RAW + '?t=' + Date.now());
+    const res = await fetch(GIST_API, {
+      headers: { Accept: 'application/vnd.github.v3+json' }
+    });
     if (!res.ok) throw new Error('Failed to fetch');
-    _eventsCache = await res.json();
+    const gist = await res.json();
+    const content = gist.files['events.json']?.content || '[]';
+    _eventsCache = JSON.parse(content);
   } catch(e) {
-    console.warn('Could not load events from Gist, using empty list.', e);
+    console.warn('Could not load events from Gist:', e);
     _eventsCache = [];
   }
   return _eventsCache;
