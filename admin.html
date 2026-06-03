@@ -409,19 +409,14 @@ function formatDate(d) {
 }
 
 async function loadAndRender() {
-  setLoading(true);
+  document.getElementById('eventsTableBody').innerHTML = '<tr><td colspan="5" class="empty-state">Loading…</td></tr>';
   try {
     _events = await fetchEvents();
     renderAll();
   } catch(e) {
     showToast('⚠ Could not load events: ' + e.message);
+    document.getElementById('eventsTableBody').innerHTML = '<tr><td colspan="5" class="empty-state">Failed to load events.</td></tr>';
   }
-  setLoading(false);
-}
-
-function setLoading(on) {
-  document.getElementById('eventsTableBody').innerHTML = on
-    ? '<tr><td colspan="5" class="empty-state">Loading…</td></tr>' : '';
 }
 
 function renderAll() {
