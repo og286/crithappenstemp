@@ -337,6 +337,9 @@ function showApp() {
   loadAndRender();
 }
 
+// ── EVENTS CACHE (must be declared before auto-login runs) ──
+let _events = [];
+
 // Restore session on page load
 const _stored = sessionStorage.getItem('ch_session');
 if (_stored) { _session = JSON.parse(_stored); showApp(); }
@@ -404,8 +407,6 @@ function escHtml(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&
 function formatDate(d) {
   return new Date(d+'T00:00:00').toLocaleDateString('en-GB',{weekday:'short',year:'numeric',month:'short',day:'numeric'});
 }
-
-let _events = [];
 
 async function loadAndRender() {
   setLoading(true);
