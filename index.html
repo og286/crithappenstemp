@@ -556,7 +556,7 @@
           <li>£5 per session attended</li>
           <li>Or pay £15 for the whole month</li>
           <li>Vote in club decisions</li>
-          <li>Member-only Discord channels</li>
+          <li>All profits are re-invested into the club</li>
           <li>Help shape the club's future</li>
         </ul>
       </div>
@@ -583,7 +583,6 @@
       <div class="info-card">
         <h3><span>◈</span> When We Meet</h3>
         <p>Every Monday Evening</p>
-        <p style="color:#6b7280;">(except bank holidays)</p>
         <p style="margin-top:0.75rem;">First session is FREE — contact us first</p>
         <p>Find us on Discord to arrange your first visit</p>
       </div>
@@ -592,13 +591,8 @@
         <p>Access to gaming tables</p>
         <p>Club scenery and gaming mats</p>
         <p>Loaner dice and rule books</p>
+        <p>Demo games of many systems</p>
         <p>Friendly opponents and new friends</p>
-      </div>
-      <div class="info-card">
-        <h3><span>◈</span> Teen Sessions</h3>
-        <p>We run dedicated teen-friendly sessions for younger players.</p>
-        <p style="margin-top:0.75rem;">Safe, supervised, and inclusive environment.</p>
-        <p>Get in touch to learn more.</p>
       </div>
     </div>
   </div>
@@ -624,11 +618,10 @@
       <p>Our members play a huge range of games. On any given Monday you might find a 40K battle unfolding on one table, a D&amp;D dungeon crawl at another, and a Ticket to Ride tournament in the corner. We particularly enjoy Warhammer 40,000, Dropfleet Commander, Pathfinder, and Bolt Action — but we're always open to new games.</p>
       <h3>New to Tabletop Gaming?</h3>
       <p>Don't worry if you've never played before. We love introducing new players to the hobby. Your first session is completely free — just get in touch via Discord or the contact form and let us know you're coming. We'll make sure someone's there to show you the ropes.</p>
-      <h3>Teen Sessions</h3>
-      <p>We run dedicated sessions for younger players in a safe, supervised environment. These sessions are designed to be fun and welcoming for teens who want to get into the hobby. Get in touch for more information.</p>
       <div class="safeguarding-box">
         <h4>🛡 Safeguarding</h4>
         <p>The safety and wellbeing of all our members — especially younger players — is our top priority. We have a safeguarding policy in place and all committee members are CRB checked. If you have any concerns, please speak to a committee member or contact us directly.</p>
+        <p style="margin-top:0.75rem;">Attendees under 13 years must be accompanied by a parent or guardian. Attendees aged 13–18 require parent or guardian consent to attend.</p>
       </div>
     </div>
   </div>
@@ -646,28 +639,28 @@
         <h3>Send us a message</h3>
         <div class="form-group">
           <label>Your Name</label>
-          <input type="text" placeholder="e.g. Jon Smith" />
+          <input type="text" id="contactName" name="name" placeholder="e.g. Jon Smith" />
         </div>
         <div class="form-group">
           <label>Email Address</label>
-          <input type="email" placeholder="your@email.com" />
+          <input type="email" id="contactEmail" name="email" placeholder="your@email.com" />
         </div>
         <div class="form-group">
           <label>Subject</label>
-          <select>
+          <select id="contactSubject" name="subject">
             <option>General Enquiry</option>
             <option>First Visit / New Member</option>
-            <option>Teen Sessions</option>
             <option>Events</option>
             <option>Other</option>
           </select>
         </div>
         <div class="form-group">
           <label>Message</label>
-          <textarea placeholder="Your message..."></textarea>
+          <textarea id="contactMessage" name="message" placeholder="Your message..."></textarea>
         </div>
         <button class="btn-primary" style="width:100%;" onclick="handleContactSubmit()">Send Message</button>
         <p id="contactSuccess" style="display:none;color:#a78bfa;margin-top:1rem;text-align:center;">✓ Message sent! We'll get back to you soon.</p>
+        <p id="contactError" style="display:none;color:#ef4444;margin-top:1rem;text-align:center;">⚠ Something went wrong. Please try again.</p>
       </div>
       <div class="contact-info">
         <h3>Find us</h3>
@@ -774,13 +767,6 @@
         <a href="javascript:void(0)" data-section="membership">Membership</a>
         <a href="javascript:void(0)" data-section="about">About</a>
         <a href="javascript:void(0)" data-section="contact">Contact</a>
-      </div>
-      <div class="footer-col">
-        <h4>Games</h4>
-        <a href="#">Wargames</a>
-        <a href="#">D&amp;D &amp; RPGs</a>
-        <a href="#">Board Games</a>
-        <a href="#">Teen Sessions</a>
       </div>
       <div class="footer-col">
         <h4>Connect</h4>
@@ -1083,8 +1069,40 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 // ── CONTACT ──
-function handleContactSubmit() {
-  document.getElementById('contactSuccess').style.display = 'block';
+async function handleContactSubmit() {
+  const name    = document.getElementById('contactName').value.trim();
+  const email   = document.getElementById('contactEmail').value.trim();
+  const message = document.getElementById('contactMessage').value.trim();
+  if (!name || !email || !message) return;
+
+  const btn = document.querySelector('#contact .btn-primary');
+  btn.textContent = 'Sending…';
+  btn.disabled = true;
+
+  try {
+    const res = await fetch('https://formspree.io/f/meewqkqj', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+      body: JSON.stringify({
+        name,
+        email,
+        subject: document.getElementById('contactSubject').value,
+        message
+      })
+    });
+    if (!res.ok) throw new Error();
+    document.getElementById('contactSuccess').style.display = 'block';
+    document.getElementById('contactError').style.display = 'none';
+    document.getElementById('contactName').value = '';
+    document.getElementById('contactEmail').value = '';
+    document.getElementById('contactMessage').value = '';
+  } catch(e) {
+    document.getElementById('contactError').style.display = 'block';
+    document.getElementById('contactSuccess').style.display = 'none';
+  }
+
+  btn.textContent = 'Send Message';
+  btn.disabled = false;
 }
 
 // ── UTILS ──
