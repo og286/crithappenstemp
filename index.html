@@ -179,7 +179,7 @@
     .event-item {
       background: var(--card); border: 1px solid var(--border); border-radius: 10px;
       padding: 1.25rem 1.5rem; display: flex; align-items: center; gap: 1.5rem;
-      transition: border-color 0.2s;
+      transition: border-color 0.2s; cursor: pointer;
     }
     .event-item:hover { border-color: var(--purple); }
     .event-date-box {
@@ -661,6 +661,7 @@
         <button class="btn-primary" style="width:100%;" onclick="handleContactSubmit()">Send Message</button>
         <p id="contactSuccess" style="display:none;color:#a78bfa;margin-top:1rem;text-align:center;">✓ Message sent! We'll get back to you soon.</p>
         <p id="contactError" style="display:none;color:#ef4444;margin-top:1rem;text-align:center;">⚠ Something went wrong. Please try again.</p>
+        <p style="margin-top:1rem;font-size:0.82rem;color:var(--muted);text-align:center;">Or email us directly at <a href="mailto:crithappensuk@gmail.com" style="color:var(--purple-light);">crithappensuk@gmail.com</a></p>
       </div>
       <div class="contact-info">
         <h3>Find us</h3>
@@ -903,7 +904,7 @@ async function renderHomeEvents() {
   el.innerHTML = events.map(e => {
     const d = formatDate(e.date);
     return `
-      <div class="event-item">
+      <div class="event-item" onclick="openEventModal(${e.id})">
         <div class="event-date-box">
           <div class="day">${d.day}</div>
           <div class="month">${d.month}</div>
