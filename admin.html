@@ -354,7 +354,7 @@ function toRow(e) {
     end_date:       e.endDate        || null,
     description:    e.description    || null,
     cost:           e.cost           || null,
-    payment_amount: e.paymentAmount  ? parseFloat(e.paymentAmount) : null
+    payment_amount: (e.paymentAmount != null && e.paymentAmount !== '') ? parseFloat(e.paymentAmount) : null
   };
 }
 function fromRow(r) {
@@ -487,7 +487,7 @@ function openModal(id) {
       document.getElementById('fEndDate').value = e.endDate || '';
       document.getElementById('fCategory').value = e.category || 'general';
       document.getElementById('fCost').value = e.cost || '';
-      document.getElementById('fPaymentAmount').value = e.paymentAmount || '';
+      document.getElementById('fPaymentAmount').value = (e.paymentAmount != null) ? e.paymentAmount : '';
       document.getElementById('fDescription').value = e.description || '';
     }
   } else {
@@ -519,7 +519,7 @@ async function saveEvent() {
     endDate:       document.getElementById('fEndDate').value || null,
     category:      document.getElementById('fCategory').value,
     cost:          document.getElementById('fCost').value.trim(),
-    paymentAmount: document.getElementById('fPaymentAmount').value.trim() || null,
+    paymentAmount: document.getElementById('fPaymentAmount').value.trim() !== '' ? document.getElementById('fPaymentAmount').value.trim() : null,
     description:   document.getElementById('fDescription').value.trim()
   };
 
