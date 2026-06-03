@@ -1,0 +1,34 @@
+[
+  {
+    "id": 1,
+    "title": "40K Open Night",
+    "date": "2025-08-04",
+    "category": "wargames",
+    "description": "Bring your army and find a game! All points levels welcome. Tables available from 6pm.",
+    "cost": "Standard session fee"
+  },
+  {
+    "id": 2,
+    "title": "D&D One-Shot: The Sunken Vault",
+    "date": "2025-08-11",
+    "category": "rpg",
+    "description": "A self-contained 3-hour adventure for 4-6 players. Pregens available. All experience levels welcome.",
+    "cost": "Standard session fee"
+  },
+  {
+    "id": 3,
+    "title": "Bolt Action Tournament",
+    "date": "2025-08-18",
+    "category": "wargames",
+    "description": "A fun, casual 3-game Bolt Action tournament. 1000pts, painted armies preferred. Sign up in Discord.",
+    "cost": "£10 entry"
+  },
+  {
+    "id": 4,
+    "title": "Board Games Social",
+    "date": "2025-09-01",
+    "category": "boardgames",
+    "description": "Monthly board games social — bring a game or borrow from the club library. All welcome.",
+    "cost": "Standard session fee"
+  }
+]

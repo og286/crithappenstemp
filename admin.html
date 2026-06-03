@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Crit Happens – Admin</title>
+  <style>
+    :root {
+      --purple: #7c3aed; --purple-dark: #5b21b6; --purple-light: #a78bfa;
+      --purple-glow: rgba(124,58,237,0.35);
+      --bg: #0d0d14; --bg2: #13131f; --bg3: #1a1a2e;
+      --card: #1e1e30; --border: rgba(124,58,237,0.25);
+      --text: #e8e8f0; --muted: #9090b0; --white: #ffffff;
+      --danger: #ef4444; --success: #22c55e;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+
+    /* LOGIN */
+    #loginScreen {
+      min-height: 100vh; display: flex; align-items: center; justify-content: center;
+      background: radial-gradient(ellipse at center, #1a0a30 0%, var(--bg) 70%);
+    }
+    .login-box {
+      background: var(--card); border: 1px solid var(--border); border-radius: 16px;
+      padding: 2.5rem; width: 100%; max-width: 400px; text-align: center;
+      box-shadow: 0 20px 60px var(--purple-glow);
+    }
+    .login-box h1 { font-size: 1.75rem; font-weight: 900; text-transform: uppercase; letter-spacing: 0.08em; color: var(--white); margin-bottom: 0.5rem; }
+    .login-box p { color: var(--muted); font-size: 0.9rem; margin-bottom: 2rem; }
+    .login-box input {
+      width: 100%; background: var(--bg3); border: 1px solid var(--border);
+      border-radius: 8px; color: var(--text); padding: 0.75rem 1rem; font-size: 1rem;
+      margin-bottom: 1rem; text-align: center; letter-spacing: 0.1em;
+    }
+    .login-box input:focus { outline: none; border-color: var(--purple); }
+    .login-error { color: var(--danger); font-size: 0.85rem; margin-bottom: 1rem; display: none; }
+    .btn-primary {
+      width: 100%; padding: 0.75rem; border-radius: 8px; font-size: 1rem; font-weight: 700;
+      background: var(--purple); color: #fff; border: none; cursor: pointer;
+      transition: background 0.2s; box-shadow: 0 4px 20px rgba(124,58,237,0.4);
+    }
+    .btn-primary:hover { background: var(--purple-dark); }
+    .back-link { display: block; margin-top: 1.25rem; color: var(--muted); font-size: 0.85rem; text-decoration: none; }
+    .back-link:hover { color: var(--purple-light); }
+
+    /* ADMIN APP */
+    #adminApp { display: none; }
+    header {
+      background: rgba(13,13,20,0.95); backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+      padding: 0 2rem; height: 64px;
+      display: flex; align-items: center; justify-content: space-between;
+      position: sticky; top: 0; z-index: 100;
+    }
+    .header-logo { font-size: 1rem; font-weight: 900; text-transform: uppercase; letter-spacing: 0.08em; color: var(--white); }
+    .header-logo span { color: var(--purple-light); font-size: 0.75rem; font-weight: 500; margin-left: 0.5rem; letter-spacing: 0.05em; }
+    .header-actions { display: flex; gap: 0.75rem; align-items: center; }
+    .btn-sm {
+      padding: 0.45rem 1rem; border-radius: 6px; font-size: 0.85rem; font-weight: 600;
+      cursor: pointer; border: none; transition: all 0.2s;
+    }
+    .btn-add { background: var(--purple); color: #fff; }
+    .btn-add:hover { background: var(--purple-dark); }
+    .btn-ghost { background: transparent; border: 1px solid var(--border); color: var(--muted); }
+    .btn-ghost:hover { border-color: var(--purple-light); color: var(--white); }
+    .btn-danger { background: var(--danger); color: #fff; }
+    .btn-danger:hover { background: #dc2626; }
+
+    main { max-width: 1000px; margin: 0 auto; padding: 2.5rem 2rem; }
+
+    /* STATS */
+    .stats-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin-bottom: 2.5rem; }
+    .stat-card {
+      background: var(--card); border: 1px solid var(--border); border-radius: 10px;
+      padding: 1.25rem; text-align: center;
+    }
+    .stat-card .num { font-size: 2rem; font-weight: 900; color: var(--white); }
+    .stat-card .label { font-size: 0.8rem; color: var(--muted); margin-top: 0.2rem; }
+
+    /* EVENT TABLE */
+    .section-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.25rem; }
+    .section-header h2 { font-size: 1.1rem; font-weight: 700; color: var(--white); }
+    .event-table { width: 100%; border-collapse: collapse; }
+    .event-table th {
+      text-align: left; font-size: 0.75rem; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 0.08em; color: var(--muted); padding: 0.75rem 1rem;
+      border-bottom: 1px solid var(--border);
+    }
+    .event-table td {
+      padding: 1rem; border-bottom: 1px solid rgba(124,58,237,0.1);
+      font-size: 0.9rem; vertical-align: middle;
+    }
+    .event-table tr:last-child td { border-bottom: none; }
+    .event-table tr:hover td { background: rgba(124,58,237,0.05); }
+    .event-table-wrap {
+      background: var(--card); border: 1px solid var(--border); border-radius: 12px; overflow: hidden;
+    }
+    .cat-badge {
+      font-size: 0.72rem; font-weight: 600; padding: 0.2rem 0.6rem;
+      border-radius: 20px; border: 1px solid var(--border); color: var(--purple-light);
+      white-space: nowrap;
+    }
+    .past-row td { opacity: 0.5; }
+    .empty-state { text-align: center; padding: 3rem; color: var(--muted); }
+
+    /* MODAL */
+    .modal-overlay {
+      display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7);
+      z-index: 200; align-items: center; justify-content: center; padding: 1rem;
+    }
+    .modal-overlay.open { display: flex; }
+    .modal {
+      background: var(--bg2); border: 1px solid var(--border); border-radius: 16px;
+      padding: 2rem; width: 100%; max-width: 560px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+    }
+    .modal h2 { font-size: 1.2rem; font-weight: 700; color: var(--white); margin-bottom: 1.5rem; }
+    .form-group { margin-bottom: 1.25rem; }
+    .form-group label { display: block; font-size: 0.82rem; color: var(--muted); margin-bottom: 0.4rem; }
+    .form-group input, .form-group textarea, .form-group select {
+      width: 100%; background: var(--bg3); border: 1px solid var(--border);
+      border-radius: 8px; color: var(--text); padding: 0.65rem 0.9rem; font-size: 0.9rem;
+      font-family: inherit; transition: border-color 0.2s;
+    }
+    .form-group input:focus, .form-group textarea:focus, .form-group select:focus {
+      outline: none; border-color: var(--purple);
+    }
+    .form-group textarea { resize: vertical; min-height: 90px; }
+    .modal-footer { display: flex; gap: 0.75rem; justify-content: flex-end; margin-top: 1.5rem; }
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+
+    /* TOAST */
+    #toast {
+      position: fixed; bottom: 2rem; right: 2rem; z-index: 300;
+      background: var(--card); border: 1px solid var(--border); border-radius: 10px;
+      padding: 1rem 1.5rem; font-size: 0.9rem; color: var(--white);
+      box-shadow: 0 8px 30px rgba(0,0,0,0.4);
+      transform: translateY(100px); opacity: 0; transition: all 0.3s;
+    }
+    #toast.show { transform: translateY(0); opacity: 1; }
+
+    @media (max-width: 600px) {
+      .stats-row { grid-template-columns: repeat(2,1fr); }
+      .form-row { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- LOGIN SCREEN -->
+<div id="loginScreen">
+  <div class="login-box">
+    <h1>Crit Happens</h1>
+    <p>Admin Panel — Club Committee Only</p>
+    <input type="password" id="passwordInput" placeholder="Paste your GitHub token"
+           onkeydown="if(event.key==='Enter')doLogin()" />
+    <p class="login-error" id="loginError">Incorrect password. Try again.</p>
+    <button class="btn-primary" onclick="doLogin()">Log In</button>
+    <a href="index.html" class="back-link">← Back to website</a>
+  </div>
+</div>
+
+<!-- ADMIN APP -->
+<div id="adminApp">
+  <header>
+    <div class="header-logo">Crit Happens <span>ADMIN</span></div>
+    <div class="header-actions">
+      <a href="index.html" class="btn-sm btn-ghost" style="text-decoration:none;">View Website</a>
+      <button class="btn-sm btn-add" onclick="openModal()">+ Add Event</button>
+      <button class="btn-sm btn-ghost" onclick="doLogout()">Log Out</button>
+    </div>
+  </header>
+
+  <main>
+    <!-- Stats -->
+    <div class="stats-row">
+      <div class="stat-card">
+        <div class="num" id="statTotal">0</div>
+        <div class="label">Total Events</div>
+      </div>
+      <div class="stat-card">
+        <div class="num" id="statUpcoming">0</div>
+        <div class="label">Upcoming</div>
+      </div>
+      <div class="stat-card">
+        <div class="num" id="statThisMonth">0</div>
+        <div class="label">This Month</div>
+      </div>
+      <div class="stat-card">
+        <div class="num" id="statPast">0</div>
+        <div class="label">Past Events</div>
+      </div>
+    </div>
+
+    <!-- Events Table -->
+    <div class="section-header">
+      <h2>Events</h2>
+      <button class="btn-sm btn-add" onclick="openModal()">+ Add Event</button>
+    </div>
+    <div class="event-table-wrap">
+      <table class="event-table">
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Event</th>
+            <th>Category</th>
+            <th>Cost</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody id="eventsTableBody"></tbody>
+      </table>
+    </div>
+  </main>
+</div>
+
+<!-- EVENT MODAL -->
+<div class="modal-overlay" id="modalOverlay" onclick="closeModalOutside(event)">
+  <div class="modal">
+    <h2 id="modalTitle">Add Event</h2>
+    <div class="form-group">
+      <label>Event Title *</label>
+      <input type="text" id="fTitle" placeholder="e.g. 40K Tournament" />
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Date *</label>
+        <input type="date" id="fDate" />
+      </div>
+      <div class="form-group">
+        <label>Category</label>
+        <select id="fCategory">
+          <option value="wargames">Wargames</option>
+          <option value="rpg">RPG &amp; D&amp;D</option>
+          <option value="boardgames">Board Games</option>
+          <option value="social">Social</option>
+          <option value="general">General</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-group">
+      <label>Cost / Entry</label>
+      <input type="text" id="fCost" placeholder="e.g. £10 entry, or Standard session fee" />
+    </div>
+    <div class="form-group">
+      <label>Description</label>
+      <textarea id="fDescription" placeholder="Event details, rules, sign-up info..."></textarea>
+    </div>
+    <p id="modalError" style="color:var(--danger);font-size:0.85rem;margin-top:-0.5rem;display:none;">Please fill in the required fields.</p>
+    <div class="modal-footer">
+      <button class="btn-sm btn-ghost" onclick="closeModal()">Cancel</button>
+      <button class="btn-sm btn-add" onclick="saveEvent()">Save Event</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div id="toast"></div>
+
+<script>
+// ── CONFIG — set your Gist ID here after creating it ──
+const GIST_ID = 'fd11a3d66a4df03dc6e45bb4d0fba2cb';
+const GIST_FILENAME = 'events.json';
+
+// ── TOKEN STORAGE (stored in browser, never sent anywhere except GitHub API) ──
+function getToken() { return localStorage.getItem('ch_gh_token') || ''; }
+function saveToken(t) { localStorage.setItem('ch_gh_token', t); }
+
+// ── AUTH ──
+async function doLogin() {
+  const token = document.getElementById('passwordInput').value.trim();
+  if (!token) return;
+  const err = document.getElementById('loginError');
+  err.style.display = 'none';
+  // Verify token works by fetching the Gist
+  try {
+    const res = await fetch(`https://api.github.com/gists/${GIST_ID}`, {
+      headers: { Authorization: `token ${token}`, Accept: 'application/vnd.github.v3+json' }
+    });
+    if (!res.ok) throw new Error('Bad token or Gist ID');
+    saveToken(token);
+    showApp();
+  } catch(e) {
+    err.textContent = 'Could not authenticate. Check your token and Gist ID.';
+    err.style.display = 'block';
+    document.getElementById('passwordInput').value = '';
+  }
+}
+
+function doLogout() {
+  localStorage.removeItem('ch_gh_token');
+  document.getElementById('loginScreen').style.display = 'flex';
+  document.getElementById('adminApp').style.display = 'none';
+  document.getElementById('passwordInput').value = '';
+}
+
+function showApp() {
+  document.getElementById('loginScreen').style.display = 'none';
+  document.getElementById('adminApp').style.display = 'block';
+  loadAndRender();
+}
+
+// Auto-login if token already stored
+if (getToken()) showApp();
+
+// ── GITHUB GIST API ──
+async function fetchEvents() {
+  const res = await fetch(`https://api.github.com/gists/${GIST_ID}`, {
+    headers: { Authorization: `token ${getToken()}`, Accept: 'application/vnd.github.v3+json' }
+  });
+  if (!res.ok) throw new Error('Failed to fetch Gist');
+  const gist = await res.json();
+  const content = gist.files[GIST_FILENAME]?.content || '[]';
+  return JSON.parse(content);
+}
+
+async function pushEvents(events) {
+  const res = await fetch(`https://api.github.com/gists/${GIST_ID}`, {
+    method: 'PATCH',
+    headers: {
+      Authorization: `token ${getToken()}`,
+      Accept: 'application/vnd.github.v3+json',
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      files: { [GIST_FILENAME]: { content: JSON.stringify(events, null, 2) } }
+    })
+  });
+  if (!res.ok) throw new Error('Failed to update Gist');
+}
+
+// ── RENDER ──
+const CAT = { wargames:'Wargames', rpg:'RPG & D&D', boardgames:'Board Games', social:'Social', general:'General' };
+function escHtml(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function formatDate(d) {
+  return new Date(d+'T00:00:00').toLocaleDateString('en-GB',{weekday:'short',year:'numeric',month:'short',day:'numeric'});
+}
+function nextId(events) { return events.length ? Math.max(...events.map(e=>e.id||0)) + 1 : 1; }
+
+let _events = [];
+
+async function loadAndRender() {
+  setLoading(true);
+  try {
+    _events = await fetchEvents();
+    renderAll();
+  } catch(e) {
+    showToast('⚠ Could not load events from Gist');
+  }
+  setLoading(false);
+}
+
+function setLoading(on) {
+  document.getElementById('eventsTableBody').innerHTML = on
+    ? '<tr><td colspan="5" class="empty-state">Loading…</td></tr>' : '';
+}
+
+function renderAll() {
+  const events = [..._events].sort((a,b) => a.date.localeCompare(b.date));
+  const now = new Date(new Date().setHours(0,0,0,0));
+  const upcoming = events.filter(e => new Date(e.date+'T00:00:00') >= now);
+  const past = events.filter(e => new Date(e.date+'T00:00:00') < now);
+  const thisMonth = upcoming.filter(e => {
+    const d = new Date(e.date+'T00:00:00');
+    return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+  });
+  document.getElementById('statTotal').textContent = events.length;
+  document.getElementById('statUpcoming').textContent = upcoming.length;
+  document.getElementById('statThisMonth').textContent = thisMonth.length;
+  document.getElementById('statPast').textContent = past.length;
+
+  const tbody = document.getElementById('eventsTableBody');
+  if (!events.length) {
+    tbody.innerHTML = '<tr><td colspan="5" class="empty-state">No events yet. Click "+ Add Event" to create one.</td></tr>';
+    return;
+  }
+  tbody.innerHTML = events.map(e => {
+    const isPast = new Date(e.date+'T00:00:00') < now;
+    return `
+      <tr class="${isPast?'past-row':''}">
+        <td style="white-space:nowrap;color:${isPast?'var(--muted)':'var(--text)'};">${formatDate(e.date)}</td>
+        <td>
+          <div style="font-weight:600;color:var(--white);">${escHtml(e.title)}</div>
+          ${e.description ? `<div style="font-size:0.8rem;color:var(--muted);margin-top:0.2rem;">${escHtml(e.description.substring(0,80))}${e.description.length>80?'…':''}</div>` : ''}
+        </td>
+        <td><span class="cat-badge">${CAT[e.category]||'General'}</span></td>
+        <td style="font-size:0.85rem;color:var(--muted);">${escHtml(e.cost||'—')}</td>
+        <td>
+          <div style="display:flex;gap:0.5rem;">
+            <button class="btn-sm btn-ghost" onclick="editEvent(${e.id})">Edit</button>
+            <button class="btn-sm btn-danger" onclick="deleteEvent(${e.id})">Delete</button>
+          </div>
+        </td>
+      </tr>`;
+  }).join('');
+}
+
+// ── MODAL ──
+let editingId = null;
+function openModal(id) {
+  editingId = id || null;
+  document.getElementById('modalTitle').textContent = id ? 'Edit Event' : 'Add Event';
+  document.getElementById('modalError').style.display = 'none';
+  if (id) {
+    const e = _events.find(ev => ev.id === id);
+    if (e) {
+      document.getElementById('fTitle').value = e.title || '';
+      document.getElementById('fDate').value = e.date || '';
+      document.getElementById('fCategory').value = e.category || 'general';
+      document.getElementById('fCost').value = e.cost || '';
+      document.getElementById('fDescription').value = e.description || '';
+    }
+  } else {
+    document.getElementById('fTitle').value = '';
+    document.getElementById('fDate').value = '';
+    document.getElementById('fCategory').value = 'general';
+    document.getElementById('fCost').value = '';
+    document.getElementById('fDescription').value = '';
+  }
+  document.getElementById('modalOverlay').classList.add('open');
+  setTimeout(() => document.getElementById('fTitle').focus(), 50);
+}
+function editEvent(id) { openModal(id); }
+function closeModal() { document.getElementById('modalOverlay').classList.remove('open'); editingId = null; }
+function closeModalOutside(e) { if (e.target === document.getElementById('modalOverlay')) closeModal(); }
+
+async function saveEvent() {
+  const title = document.getElementById('fTitle').value.trim();
+  const date = document.getElementById('fDate').value;
+  if (!title || !date) { document.getElementById('modalError').style.display = 'block'; return; }
+
+  const eventData = {
+    id: editingId || nextId(_events),
+    title, date,
+    category: document.getElementById('fCategory').value,
+    cost: document.getElementById('fCost').value.trim(),
+    description: document.getElementById('fDescription').value.trim()
+  };
+
+  const updated = editingId
+    ? _events.map(e => e.id === editingId ? eventData : e)
+    : [..._events, eventData];
+
+  closeModal();
+  showToast('Saving…');
+  try {
+    await pushEvents(updated);
+    _events = updated;
+    renderAll();
+    showToast(editingId ? '✓ Event updated' : '✓ Event added');
+  } catch(e) {
+    showToast('⚠ Save failed — check your token');
+  }
+}
+
+async function deleteEvent(id) {
+  if (!confirm('Delete this event? This cannot be undone.')) return;
+  const updated = _events.filter(e => e.id !== id);
+  showToast('Deleting…');
+  try {
+    await pushEvents(updated);
+    _events = updated;
+    renderAll();
+    showToast('✓ Event deleted');
+  } catch(e) {
+    showToast('⚠ Delete failed — check your token');
+  }
+}
+
+// ── TOAST ──
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(t._timer);
+  t._timer = setTimeout(() => t.classList.remove('show'), 2800);
+}
+</script>
+</body>
+</html>
