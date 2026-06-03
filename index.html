@@ -745,6 +745,7 @@
     <div style="display:flex;gap:0.75rem;flex-wrap:wrap;align-items:center;">
       <a href="https://discord.gg/grnBA4YAs5" target="_blank" class="btn-primary" style="font-size:0.88rem;padding:0.6rem 1.25rem;">💬 Join Discord to sign up</a>
       <a id="eventModalPaypal" href="#" target="_blank" style="display:none;font-size:0.88rem;padding:0.6rem 1.25rem;border-radius:8px;font-weight:700;background:#0070ba;color:#fff;text-decoration:none;">💳 Pay via PayPal</a>
+      <a id="eventModalSignUp" href="#" target="_blank" rel="noopener noreferrer" style="display:none;font-size:0.88rem;padding:0.6rem 1.25rem;border-radius:8px;font-weight:700;background:#059669;color:#fff;text-decoration:none;">📋 Sign Up</a>
       <button id="eventModalShareBtn" onclick="copyEventLink()" style="font-size:0.88rem;padding:0.6rem 1.25rem;border-radius:8px;font-weight:700;background:transparent;border:1px solid rgba(255,255,255,0.2);color:var(--text);cursor:pointer;">🔗 Copy link</button>
     </div>
   </div>
@@ -845,7 +846,8 @@ async function loadEvents() {
       endDate:       r.end_date,
       description:   r.description,
       cost:          r.cost,
-      paymentAmount: r.payment_amount
+      paymentAmount: r.payment_amount,
+      signUpLink:    r.sign_up_link
     }));
   } catch(e) {
     console.error('Events load error:', e.message);
@@ -986,6 +988,15 @@ async function openEventModal(id) {
     badge.textContent = TYPE_LABELS[e.type] || e.type;
   } else {
     badge.style.display = 'none';
+  }
+
+  // Sign-up link button
+  const signUpBtn = document.getElementById('eventModalSignUp');
+  if (e.signUpLink) {
+    signUpBtn.href = e.signUpLink;
+    signUpBtn.style.display = 'inline-block';
+  } else {
+    signUpBtn.style.display = 'none';
   }
 
   // PayPal button

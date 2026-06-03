@@ -267,6 +267,10 @@
       </div>
     </div>
     <div class="form-group">
+      <label>Sign-up Link <span style="font-weight:400;color:var(--muted);">(optional — e.g. Longshanks, Best Coast Pairings)</span></label>
+      <input type="url" id="fSignUpLink" placeholder="https://longshanks.org/..." />
+    </div>
+    <div class="form-group">
       <label>Description</label>
       <textarea id="fDescription" placeholder="Event details, rules, sign-up info..."></textarea>
     </div>
@@ -354,7 +358,8 @@ function toRow(e) {
     end_date:       e.endDate        || null,
     description:    e.description    || null,
     cost:           e.cost           || null,
-    payment_amount: (e.paymentAmount != null && e.paymentAmount !== '') ? parseFloat(e.paymentAmount) : null
+    payment_amount: (e.paymentAmount != null && e.paymentAmount !== '') ? parseFloat(e.paymentAmount) : null,
+    sign_up_link:   e.signUpLink || null
   };
 }
 function fromRow(r) {
@@ -367,7 +372,8 @@ function fromRow(r) {
     endDate:       r.end_date,
     description:   r.description,
     cost:          r.cost,
-    paymentAmount: r.payment_amount
+    paymentAmount: r.payment_amount,
+    signUpLink:    r.sign_up_link
   };
 }
 
@@ -488,6 +494,7 @@ function openModal(id) {
       document.getElementById('fCategory').value = e.category || 'general';
       document.getElementById('fCost').value = e.cost || '';
       document.getElementById('fPaymentAmount').value = (e.paymentAmount != null) ? e.paymentAmount : '';
+      document.getElementById('fSignUpLink').value = e.signUpLink || '';
       document.getElementById('fDescription').value = e.description || '';
     }
   } else {
@@ -498,6 +505,7 @@ function openModal(id) {
     document.getElementById('fCategory').value = 'general';
     document.getElementById('fCost').value = '';
     document.getElementById('fPaymentAmount').value = '';
+    document.getElementById('fSignUpLink').value = '';
     document.getElementById('fDescription').value = '';
   }
   toggleEndDate();
@@ -520,6 +528,7 @@ async function saveEvent() {
     category:      document.getElementById('fCategory').value,
     cost:          document.getElementById('fCost').value.trim(),
     paymentAmount: document.getElementById('fPaymentAmount').value.trim() !== '' ? document.getElementById('fPaymentAmount').value.trim() : null,
+    signUpLink:    document.getElementById('fSignUpLink').value.trim() || null,
     description:   document.getElementById('fDescription').value.trim()
   };
 
