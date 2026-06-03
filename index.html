@@ -711,9 +711,15 @@
 
 <!-- EVENT DETAIL MODAL -->
 <div id="eventModalOverlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:200;align-items:center;justify-content:center;padding:1rem;">
-  <div style="background:var(--bg2);border:1px solid var(--border);border-radius:16px;padding:2rem;width:100%;max-width:600px;box-shadow:0 20px 60px rgba(0,0,0,0.5);position:relative;max-height:90vh;overflow-y:auto;">
-    <button onclick="closeEventModal()" style="position:absolute;top:1rem;right:1rem;background:transparent;border:none;color:var(--muted);font-size:1.4rem;cursor:pointer;line-height:1;z-index:1;">×</button>
+  <div style="background:var(--bg2);border:1px solid var(--border);border-radius:16px;width:100%;max-width:600px;box-shadow:0 20px 60px rgba(0,0,0,0.5);position:relative;max-height:90vh;overflow-y:auto;">
+    <button onclick="closeEventModal()" style="position:absolute;top:1rem;right:1rem;background:rgba(0,0,0,0.5);border:none;color:#fff;font-size:1.4rem;cursor:pointer;line-height:1;z-index:2;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;">×</button>
 
+    <!-- Header image -->
+    <div id="eventModalImage" style="display:none;border-radius:16px 16px 0 0;overflow:hidden;height:200px;">
+      <img id="eventModalImg" src="" alt="" style="width:100%;height:100%;object-fit:cover;" />
+    </div>
+
+    <div style="padding:2rem;">
     <!-- Date / type header -->
     <div style="display:flex;align-items:flex-start;gap:1rem;margin-bottom:1.25rem;">
       <div id="eventModalDateBox" style="display:inline-flex;flex-direction:column;align-items:center;background:var(--purple);border-radius:8px;padding:0.5rem 0.9rem;flex-shrink:0;">
@@ -743,10 +749,12 @@
 
     <!-- Action buttons -->
     <div style="display:flex;gap:0.75rem;flex-wrap:wrap;align-items:center;">
-      <a href="https://discord.gg/grnBA4YAs5" target="_blank" class="btn-primary" style="font-size:0.88rem;padding:0.6rem 1.25rem;">💬 Join Discord to sign up</a>
+      <a href="https://discord.gg/grnBA4YAs5" target="_blank" class="btn-primary" style="font-size:0.88rem;padding:0.6rem 1.25rem;">💬 Discuss on Discord</a>
       <a id="eventModalPaypal" href="#" target="_blank" style="display:none;font-size:0.88rem;padding:0.6rem 1.25rem;border-radius:8px;font-weight:700;background:#0070ba;color:#fff;text-decoration:none;">💳 Pay via PayPal</a>
-      <a id="eventModalSignUp" href="#" target="_blank" rel="noopener noreferrer" style="display:none;font-size:0.88rem;padding:0.6rem 1.25rem;border-radius:8px;font-weight:700;background:#059669;color:#fff;text-decoration:none;">📋 Sign Up</a>
+      <a id="eventModalSignUp" href="#" target="_blank" rel="noopener noreferrer" style="display:none;font-size:0.88rem;padding:0.6rem 1.25rem;border-radius:8px;font-weight:700;background:#059669;color:#fff;text-decoration:none;">📋 Sign up link</a>
+      <a id="eventModalPack" href="#" target="_blank" rel="noopener noreferrer" style="display:none;font-size:0.88rem;padding:0.6rem 1.25rem;border-radius:8px;font-weight:700;background:var(--card);border:1px solid var(--border);color:var(--text);text-decoration:none;">📄 Event pack</a>
       <button id="eventModalShareBtn" onclick="copyEventLink()" style="font-size:0.88rem;padding:0.6rem 1.25rem;border-radius:8px;font-weight:700;background:transparent;border:1px solid rgba(255,255,255,0.2);color:var(--text);cursor:pointer;">🔗 Copy link</button>
+    </div>
     </div>
   </div>
 </div>
@@ -847,7 +855,9 @@ async function loadEvents() {
       description:   r.description,
       cost:          r.cost,
       paymentAmount: r.payment_amount,
-      signUpLink:    r.sign_up_link
+      signUpLink:    r.sign_up_link,
+      imageUrl:      r.image_url,
+      packUrl:       r.pack_url
     }));
   } catch(e) {
     console.error('Events load error:', e.message);
@@ -988,6 +998,26 @@ async function openEventModal(id) {
     badge.textContent = TYPE_LABELS[e.type] || e.type;
   } else {
     badge.style.display = 'none';
+  }
+
+  // Header image
+  const imgBox = document.getElementById('eventModalImage');
+  const img    = document.getElementById('eventModalImg');
+  if (e.imageUrl) {
+    img.src = e.imageUrl;
+    imgBox.style.display = 'block';
+  } else {
+    imgBox.style.display = 'none';
+    img.src = '';
+  }
+
+  // Event pack (PDF)
+  const packBtn = document.getElementById('eventModalPack');
+  if (e.packUrl) {
+    packBtn.href = e.packUrl;
+    packBtn.style.display = 'inline-block';
+  } else {
+    packBtn.style.display = 'none';
   }
 
   // Sign-up link button

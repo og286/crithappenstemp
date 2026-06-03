@@ -130,6 +130,13 @@
     .modal-footer { display: flex; gap: 0.75rem; justify-content: flex-end; margin-top: 1.5rem; }
     .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
 
+    /* UPLOAD */
+    .upload-box {
+      background: var(--bg3); border: 1px dashed var(--border); border-radius: 8px;
+      padding: 0.75rem; min-height: 56px;
+    }
+    .upload-box .btn-ghost { font-size: 0.8rem; padding: 0.35rem 0.8rem; }
+
     /* TOAST */
     #toast {
       position: fixed; bottom: 2rem; right: 2rem; z-index: 300;
@@ -270,6 +277,34 @@
       <label>Sign-up Link <span style="font-weight:400;color:var(--muted);">(optional — e.g. Longshanks, Best Coast Pairings)</span></label>
       <input type="url" id="fSignUpLink" placeholder="https://longshanks.org/..." />
     </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Header Image <span style="font-weight:400;color:var(--muted);">max 2MB · JPG/PNG/WebP</span></label>
+        <div class="upload-box" id="imageUploadBox">
+          <img id="imagePreview" src="" alt="" style="display:none;width:100%;height:120px;object-fit:cover;border-radius:6px;margin-bottom:0.5rem;" />
+          <div id="imageUploadInner">
+            <input type="file" id="fImageFile" accept="image/jpeg,image/png,image/webp,image/gif" style="display:none;" onchange="handleImageUpload(this)" />
+            <button type="button" class="btn-sm btn-ghost" onclick="document.getElementById('fImageFile').click()">Choose image</button>
+            <span id="imageUploadStatus" style="font-size:0.8rem;color:var(--muted);margin-left:0.5rem;"></span>
+          </div>
+          <button type="button" id="imageRemoveBtn" onclick="removeImage()" style="display:none;font-size:0.75rem;color:var(--danger);background:none;border:none;cursor:pointer;margin-top:0.25rem;">✕ Remove image</button>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Event Pack <span style="font-weight:400;color:var(--muted);">max 5MB · PDF only</span></label>
+        <div class="upload-box" id="packUploadBox">
+          <div id="packUploadInner">
+            <input type="file" id="fPackFile" accept="application/pdf" style="display:none;" onchange="handlePackUpload(this)" />
+            <button type="button" class="btn-sm btn-ghost" onclick="document.getElementById('fPackFile').click()">Choose PDF</button>
+            <span id="packUploadStatus" style="font-size:0.8rem;color:var(--muted);margin-left:0.5rem;"></span>
+          </div>
+          <div id="packCurrentFile" style="display:none;margin-top:0.5rem;">
+            <span id="packFileName" style="font-size:0.82rem;color:var(--purple-light);">📄 </span>
+            <button type="button" onclick="removePack()" style="font-size:0.75rem;color:var(--danger);background:none;border:none;cursor:pointer;margin-left:0.5rem;">✕ Remove</button>
+          </div>
+        </div>
+      </div>
+    </div>
     <div class="form-group">
       <label>Description</label>
       <textarea id="fDescription" placeholder="Event details, rules, sign-up info..."></textarea>
@@ -359,7 +394,9 @@ function toRow(e) {
     description:    e.description    || null,
     cost:           e.cost           || null,
     payment_amount: (e.paymentAmount != null && e.paymentAmount !== '') ? parseFloat(e.paymentAmount) : null,
-    sign_up_link:   e.signUpLink || null
+    sign_up_link:   e.signUpLink  || null,
+    image_url:      e.imageUrl    || null,
+    pack_url:       e.packUrl     || null
   };
 }
 function fromRow(r) {
@@ -373,7 +410,9 @@ function fromRow(r) {
     description:   r.description,
     cost:          r.cost,
     paymentAmount: r.payment_amount,
-    signUpLink:    r.sign_up_link
+    signUpLink:    r.sign_up_link,
+    imageUrl:      r.image_url,
+    packUrl:       r.pack_url
   };
 }
 
@@ -496,6 +535,8 @@ function openModal(id) {
       document.getElementById('fPaymentAmount').value = (e.paymentAmount != null) ? e.paymentAmount : '';
       document.getElementById('fSignUpLink').value = e.signUpLink || '';
       document.getElementById('fDescription').value = e.description || '';
+      setImagePreview(e.imageUrl || null);
+      setPackPreview(e.packUrl || null);
     }
   } else {
     document.getElementById('fTitle').value = '';
@@ -507,6 +548,8 @@ function openModal(id) {
     document.getElementById('fPaymentAmount').value = '';
     document.getElementById('fSignUpLink').value = '';
     document.getElementById('fDescription').value = '';
+    setImagePreview(null);
+    setPackPreview(null);
   }
   toggleEndDate();
   document.getElementById('modalOverlay').classList.add('open');
@@ -529,6 +572,8 @@ async function saveEvent() {
     cost:          document.getElementById('fCost').value.trim(),
     paymentAmount: document.getElementById('fPaymentAmount').value.trim() !== '' ? document.getElementById('fPaymentAmount').value.trim() : null,
     signUpLink:    document.getElementById('fSignUpLink').value.trim() || null,
+    imageUrl:      _pendingImageUrl,
+    packUrl:       _pendingPackUrl,
     description:   document.getElementById('fDescription').value.trim()
   };
 
@@ -559,6 +604,116 @@ async function deleteEvent(id) {
     showToast('⚠ Delete failed: ' + e.message);
   }
 }
+
+// ── FILE UPLOADS ──
+const MAX_IMAGE = 2 * 1024 * 1024;  // 2MB
+const MAX_PACK  = 5 * 1024 * 1024;  // 5MB
+let _pendingImageUrl = null;
+let _pendingPackUrl  = null;
+
+function sanitizeFilename(name) {
+  return name.replace(/[^a-z0-9.\-_]/gi, '-').toLowerCase();
+}
+
+async function uploadToStorage(bucket, file) {
+  const filename = `${Date.now()}-${sanitizeFilename(file.name)}`;
+  const res = await fetch(`${SB_URL}/storage/v1/object/${bucket}/${filename}`, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${_session.access_token}`,
+      apikey: SB_KEY,
+      'Content-Type': file.type,
+      'x-upsert': 'true'
+    },
+    body: file
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message || `Upload failed (HTTP ${res.status})`);
+  }
+  return `${SB_URL}/storage/v1/object/public/${bucket}/${filename}`;
+}
+
+async function handleImageUpload(input) {
+  const file = input.files[0];
+  if (!file) return;
+  if (file.size > MAX_IMAGE) {
+    document.getElementById('imageUploadStatus').textContent = '⚠ Image must be under 2MB';
+    document.getElementById('imageUploadStatus').style.color = 'var(--danger)';
+    input.value = '';
+    return;
+  }
+  document.getElementById('imageUploadStatus').textContent = 'Uploading…';
+  document.getElementById('imageUploadStatus').style.color = 'var(--muted)';
+  try {
+    const url = await uploadToStorage('event-images', file);
+    _pendingImageUrl = url;
+    setImagePreview(url);
+    document.getElementById('imageUploadStatus').textContent = '✓ Uploaded';
+    document.getElementById('imageUploadStatus').style.color = '#22c55e';
+  } catch(e) {
+    document.getElementById('imageUploadStatus').textContent = '⚠ ' + e.message;
+    document.getElementById('imageUploadStatus').style.color = 'var(--danger)';
+  }
+  input.value = '';
+}
+
+async function handlePackUpload(input) {
+  const file = input.files[0];
+  if (!file) return;
+  if (file.size > MAX_PACK) {
+    document.getElementById('packUploadStatus').textContent = '⚠ PDF must be under 5MB';
+    document.getElementById('packUploadStatus').style.color = 'var(--danger)';
+    input.value = '';
+    return;
+  }
+  document.getElementById('packUploadStatus').textContent = 'Uploading…';
+  document.getElementById('packUploadStatus').style.color = 'var(--muted)';
+  try {
+    const url = await uploadToStorage('event-packs', file);
+    _pendingPackUrl = url;
+    setPackPreview(url, file.name);
+    document.getElementById('packUploadStatus').textContent = '✓ Uploaded';
+    document.getElementById('packUploadStatus').style.color = '#22c55e';
+  } catch(e) {
+    document.getElementById('packUploadStatus').textContent = '⚠ ' + e.message;
+    document.getElementById('packUploadStatus').style.color = 'var(--danger)';
+  }
+  input.value = '';
+}
+
+function setImagePreview(url) {
+  _pendingImageUrl = url;
+  const img = document.getElementById('imagePreview');
+  const removeBtn = document.getElementById('imageRemoveBtn');
+  const status = document.getElementById('imageUploadStatus');
+  if (url) {
+    img.src = url; img.style.display = 'block';
+    removeBtn.style.display = 'block';
+    status.textContent = '';
+  } else {
+    img.src = ''; img.style.display = 'none';
+    removeBtn.style.display = 'none';
+  }
+}
+
+function setPackPreview(url, name) {
+  _pendingPackUrl = url;
+  const box = document.getElementById('packCurrentFile');
+  const nameEl = document.getElementById('packFileName');
+  const status = document.getElementById('packUploadStatus');
+  if (url) {
+    const label = name || url.split('/').pop();
+    nameEl.textContent = '📄 ' + decodeURIComponent(label).replace(/^\d+-/, '');
+    box.style.display = 'block';
+    status.textContent = '';
+  } else {
+    box.style.display = 'none';
+  }
+}
+
+function removeImage() { setImagePreview(null); }
+function removePack()  { setPackPreview(null); }
 
 // ── TOAST ──
 function showToast(msg) {
