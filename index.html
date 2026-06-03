@@ -922,13 +922,17 @@ async function renderFullEvents(filter) {
   const el = document.getElementById('fullEventsList');
   el.innerHTML = '<div class="no-events"><p>Loading events…</p></div>';
   const all = await loadEvents();
-  let events = all.sort((a,b) => b.date.localeCompare(a.date));
+  const now = new Date(new Date().setHours(0,0,0,0));
+  const upcoming = all.filter(e => new Date((e.endDate||e.date)+'T00:00:00') >= now)
+                      .sort((a,b) => a.date.localeCompare(b.date));
+  const past     = all.filter(e => new Date((e.endDate||e.date)+'T00:00:00') < now)
+                      .sort((a,b) => b.date.localeCompare(a.date));
+  let events = [...upcoming, ...past];
   if (filter !== 'all') events = events.filter(e => e.category === filter);
   if (!events.length) {
     el.innerHTML = '<div class="no-events"><p>No events in this category yet.</p></div>';
     return;
   }
-  const now = new Date(new Date().setHours(0,0,0,0));
   el.innerHTML = events.map(e => {
     const d = formatDate(e.date);
     const isPast = new Date((e.endDate || e.date) + 'T00:00:00') < now;
