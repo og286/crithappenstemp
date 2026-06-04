@@ -1171,7 +1171,7 @@ document.addEventListener('DOMContentLoaded', function() {
 // ── CONTACT ──
 // ── BOOKING FORM ──
 // Replace this URL with your deployed Google Apps Script web app URL:
-const BOOKING_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzjpxNy8R-mZvu4Ocik3kMYjvTlVBS6fY-PPkwt5QCZcuDIxoc5M2dUrBhLxDPmnaHr/exec';
+const BOOKING_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwz6uOFxa9Ebhv80wdZ8U2MPTi1NitRL2MArpI_D0i1u4jl3DhukYDQF6rPJ5yBG-3A/exec';
 
 function toggleOtherSystem() {
   const val = document.getElementById('bookSystem').value;
@@ -1208,7 +1208,13 @@ async function handleBookingSubmit() {
       method: 'POST',
       mode: 'no-cors',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ date, tableSize: tableSize.value, system: finalSystem, name })
+      body: JSON.stringify({
+        date,
+        tableSize: tableSize.value,
+        system: system === 'Other' ? 'Other' : finalSystem,
+        otherSystem: system === 'Other' ? otherSys : '',
+        name
+      })
     });
     document.getElementById('bookSuccess').style.display = 'block';
     document.getElementById('bookError').style.display = 'none';
