@@ -351,6 +351,7 @@
     <a href="javascript:void(0)" data-section="events">Events</a>
     <a href="javascript:void(0)" data-section="membership">Membership</a>
     <a href="javascript:void(0)" data-section="about">About</a>
+    <a href="javascript:void(0)" data-section="book">Book a Table</a>
     <a href="javascript:void(0)" data-section="contact">Contact</a>
   </div>
   <div class="nav-hamburger" id="hamburger" onclick="toggleMenu()">
@@ -623,6 +624,99 @@
         <h4>🛡 Safeguarding</h4>
         <p>The safety and wellbeing of all our members — especially younger players — is our top priority. We have a safeguarding policy in place and all committee members are CRB checked. If you have any concerns, please speak to a committee member or contact us directly.</p>
         <p style="margin-top:0.75rem;">Attendees under 13 years must be accompanied by a parent or guardian. Attendees aged 13–18 require parent or guardian consent to attend.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════
+     BOOK A TABLE
+════════════════════════════════════ -->
+<section id="book">
+  <div class="section-inner">
+    <h2 class="section-title">Book a Table</h2>
+    <p class="section-subtitle">Reserve your spot for Monday evening</p>
+
+    <div style="max-width:680px;margin:0 auto;">
+      <!-- Info banner -->
+      <div style="background:rgba(124,58,237,0.12);border:1px solid var(--border);border-radius:12px;padding:1.25rem 1.5rem;margin-bottom:2rem;font-size:0.92rem;color:var(--muted);line-height:1.7;">
+        <strong style="color:var(--purple-light);">Tabletop players</strong> — one booking per table.<br>
+        <strong style="color:var(--purple-light);">RPG players</strong> — one booking per player.<br>
+        Most games are arranged via <a href="https://discord.gg/grnBA4YAs5" target="_blank" style="color:var(--purple-light);">Discord</a> — worth joining first!
+      </div>
+
+      <div class="contact-form">
+        <h3>Reserve your spot</h3>
+
+        <!-- Date -->
+        <div class="form-group">
+          <label for="bookDate">Date <span style="color:var(--muted);font-weight:400;">(Mondays only)</span></label>
+          <input type="date" id="bookDate" />
+          <p id="bookDateError" style="display:none;color:#ef4444;font-size:0.82rem;margin-top:0.4rem;">Please select a Monday.</p>
+        </div>
+
+        <!-- Table type -->
+        <div class="form-group">
+          <label>Table Size</label>
+          <div style="display:flex;flex-direction:column;gap:0.6rem;margin-top:0.4rem;">
+            <label style="display:flex;align-items:center;gap:0.75rem;cursor:pointer;color:var(--text);font-size:0.95rem;">
+              <input type="radio" name="tableSize" value="Large Table (up to 6' x 4')" style="accent-color:var(--purple);width:16px;height:16px;" />
+              Large Table <span style="color:var(--muted);font-size:0.85rem;">(up to 6′ × 4′)</span>
+            </label>
+            <label style="display:flex;align-items:center;gap:0.75rem;cursor:pointer;color:var(--text);font-size:0.95rem;">
+              <input type="radio" name="tableSize" value="Small Table (up to 3' x 3')" style="accent-color:var(--purple);width:16px;height:16px;" />
+              Small Table <span style="color:var(--muted);font-size:0.85rem;">(up to 3′ × 3′)</span>
+            </label>
+            <label style="display:flex;align-items:center;gap:0.75rem;cursor:pointer;color:var(--text);font-size:0.95rem;">
+              <input type="radio" name="tableSize" value="RPG Area" style="accent-color:var(--purple);width:16px;height:16px;" />
+              RPG Area
+            </label>
+          </div>
+        </div>
+
+        <!-- Game system -->
+        <div class="form-group">
+          <label for="bookSystem">Game System</label>
+          <select id="bookSystem" onchange="toggleOtherSystem()">
+            <option value="">— Select —</option>
+            <option>RPG</option>
+            <option>Warhammer 40K</option>
+            <option>Age of Sigmar</option>
+            <option>Warhammer The Old World</option>
+            <option>Kill Team</option>
+            <option>Bloodbowl</option>
+            <option>The Horus Heresy</option>
+            <option>Lord of the Rings MESBG</option>
+            <option>Necromunda</option>
+            <option>Star Wars Shatterpoint</option>
+            <option>Gaslands</option>
+            <option>Infinity</option>
+            <option>One Page Rules</option>
+            <option>Star Wars Legion</option>
+            <option>Dropfleet Commander</option>
+            <option>Warmachine</option>
+            <option>Bushido</option>
+            <option>Malifaux</option>
+            <option>Trench Crusade</option>
+            <option value="Other">Other (please specify)</option>
+          </select>
+        </div>
+
+        <!-- Conditional: other system -->
+        <div class="form-group" id="otherSystemGroup" style="display:none;">
+          <label for="bookOtherSystem">System name</label>
+          <input type="text" id="bookOtherSystem" placeholder="e.g. Bolt Action" />
+        </div>
+
+        <!-- Booking name -->
+        <div class="form-group">
+          <label for="bookName">Booking Name</label>
+          <input type="text" id="bookName" placeholder="Your name, or e.g. Dave vs. Bert" />
+        </div>
+
+        <button class="btn-primary" style="width:100%;" onclick="handleBookingSubmit()">Confirm Booking</button>
+        <p id="bookSuccess" style="display:none;color:#a78bfa;margin-top:1rem;text-align:center;">✓ Booking confirmed! See you Monday.</p>
+        <p id="bookError" style="display:none;color:#ef4444;margin-top:1rem;text-align:center;">⚠ Something went wrong. Please try again or <a href="https://docs.google.com/forms/d/e/1FAIpQLSd4ihMWMmRTAzCr5lXXgboP_GF5wP_ciGrErt-0cOF7rS_8wQ/viewform" target="_blank" style="color:var(--purple-light);">use the original form</a>.</p>
       </div>
     </div>
   </div>
@@ -1075,6 +1169,64 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 // ── CONTACT ──
+// ── BOOKING FORM ──
+// Replace this URL with your deployed Google Apps Script web app URL:
+const BOOKING_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzjpxNy8R-mZvu4Ocik3kMYjvTlVBS6fY-PPkwt5QCZcuDIxoc5M2dUrBhLxDPmnaHr/exec';
+
+function toggleOtherSystem() {
+  const val = document.getElementById('bookSystem').value;
+  document.getElementById('otherSystemGroup').style.display = val === 'Other' ? 'block' : 'none';
+}
+
+async function handleBookingSubmit() {
+  const date     = document.getElementById('bookDate').value;
+  const tableSize = document.querySelector('input[name="tableSize"]:checked');
+  const system   = document.getElementById('bookSystem').value;
+  const otherSys = document.getElementById('bookOtherSystem').value.trim();
+  const name     = document.getElementById('bookName').value.trim();
+
+  // Validate Monday
+  document.getElementById('bookDateError').style.display = 'none';
+  if (date) {
+    const d = new Date(date + 'T00:00:00');
+    if (d.getDay() !== 1) {
+      document.getElementById('bookDateError').style.display = 'block';
+      return;
+    }
+  }
+
+  if (!date || !tableSize || !system || !name) return;
+
+  const finalSystem = system === 'Other' ? (otherSys || 'Other') : system;
+
+  const btn = document.querySelector('#book .btn-primary');
+  btn.textContent = 'Booking…';
+  btn.disabled = true;
+
+  try {
+    await fetch(BOOKING_SCRIPT_URL, {
+      method: 'POST',
+      mode: 'no-cors',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ date, tableSize: tableSize.value, system: finalSystem, name })
+    });
+    document.getElementById('bookSuccess').style.display = 'block';
+    document.getElementById('bookError').style.display = 'none';
+    document.getElementById('bookDate').value = '';
+    document.querySelectorAll('input[name="tableSize"]').forEach(r => r.checked = false);
+    document.getElementById('bookSystem').value = '';
+    document.getElementById('bookOtherSystem').value = '';
+    document.getElementById('bookName').value = '';
+    document.getElementById('otherSystemGroup').style.display = 'none';
+  } catch(e) {
+    document.getElementById('bookError').style.display = 'block';
+    document.getElementById('bookSuccess').style.display = 'none';
+  }
+
+  btn.textContent = 'Confirm Booking';
+  btn.disabled = false;
+}
+
 async function handleContactSubmit() {
   const name    = document.getElementById('contactName').value.trim();
   const email   = document.getElementById('contactEmail').value.trim();
